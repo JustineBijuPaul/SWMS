@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CITIZEN
+  WORKER
+  CONTRACTOR
+  ADMIN
+  STATE_ADMIN
+  SUPER_ADMIN
+}
+
+enum ComplaintStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum ComplaintCategory {
+  WET
+  DRY
+  SANITARY
+  HAZARDOUS
+}
+
+model User {
+  id               String      @id @default(uuid())
+  name             String
+  phone            String?     @unique
+  email            String?     @unique
+  password_hash    String?
+  role             Role        @default(CITIZEN)
+  language         String      @default("en")
+  created_at       DateTime    @default(now())
+
+  complaints       Complaint[]
+  assignmentsAsWorker Assignment[] @relation("WorkerAssignments")
+  assignmentsAsContractor Assignment[] @relation("ContractorAssignments")
+  workerProfile    WorkerProfile?
+  contractorProfile ContractorProfile?
+  notifications    Notification[]
+}
+
+model Location {
+  id         String      @id @default(uuid())
+  state      String
+  city       String
+  ward       String
+  zone       String?
+  pincode    String
+
+  complaints Complaint[]
+}
+
+model Complaint {
+  id            String            @id @default(uuid())
+  user_id       String
+  location_id   String
+  category      ComplaintCategory
+  description   String
+  image_url     String?
+  status        ComplaintStatus   @default(PENDING)
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+
+  user          User              @relation(fields: [user_id], references: [id])
+  location      Location          @relation(fields: [location_id], references: [id])
+  assignments   Assignment[]
+}
+
+model Assignment {
+  id              String      @id @default(uuid())
+  complaint_id    String
+  worker_id       String
+  contractor_id   String?
+  assigned_at     DateTime    @default(now())
+  completed_at    DateTime?
+  status          String      @default("assigned")
+
+  complaint       Complaint   @relation(fields: [complaint_id], references: [id])
+  worker          User        @relation("WorkerAssignments", fields: [worker_id], references: [id])
+  contractor      User?       @relation("ContractorAssignments", fields: [contractor_id], references: [id])
+}
+
+model WorkerProfile {
+  id             String      @id @default(uuid())
+  user_id        String      @unique
+  zone_id        String?
+  availability   Boolean     @default(true)
+  rating         Float       @default(0.0)
+
+  user           User        @relation(fields: [user_id], references: [id])
+}
+
+model ContractorProfile {
+  id             String      @id @default(uuid())
+  user_id        String      @unique
+  company_name   String
+  zones_managed  String[]
+
+  user           User        @relation(fields: [user_id], references: [id])
+}
+
+model Notification {
+  id            String      @id @default(uuid())
+  user_id       String
+  message       String
+  type          String
+  read_status   Boolean     @default(false)
+  created_at    DateTime    @default(now())
+
+  user          User        @relation(fields: [user_id], references: [id])
+}
+
+model AuditLog {
+  id            String      @id @default(uuid())
+  action        String
+  performed_by  String
+  entity_type   String
+  entity_id     String
+  timestamp     DateTime    @default(now())
+}

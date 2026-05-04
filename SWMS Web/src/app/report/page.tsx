@@ -1,0 +1,96 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, MapPin, Camera, CheckCircle } from 'lucide-react';
+
+export default function ReportIssue() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsSuccess(true);
+    }, 1500);
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="glass-card max-w-md w-full p-8 rounded-2xl text-center animate-slide-up">
+          <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-emerald-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">Issue Reported!</h2>
+          <p className="text-slate-400 mb-8">
+            Thank you for helping keep the city clean. Your report has been logged and assigned to the nearest worker.
+          </p>
+          <Link href="/" className="px-6 py-3 rounded-xl bg-slate-800 text-white font-medium hover:bg-slate-700 transition-colors w-full inline-block">
+            Return Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-12 px-6">
+      <div className="max-w-2xl mx-auto">
+        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+          Back to Home
+        </Link>
+        
+        <div className="glass-card p-8 rounded-3xl">
+          <h1 className="text-3xl font-bold text-white mb-2">Report an Issue</h1>
+          <p className="text-slate-400 mb-8">Provide details about the waste issue so we can resolve it quickly.</p>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
+              <select required className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none">
+                <option value="">Select a category</option>
+                <option value="WET">Wet Waste</option>
+                <option value="DRY">Dry Waste</option>
+                <option value="SANITARY">Sanitary Waste</option>
+                <option value="HAZARDOUS">Hazardous Waste</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Location</label>
+              <div className="flex gap-2">
+                <input required type="text" placeholder="Enter address or landmark" className="flex-1 bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <button type="button" className="px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex items-center justify-center">
+                  <MapPin className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+              <textarea required rows={4} placeholder="Describe the issue in detail..." className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Photo Evidence</label>
+              <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                <Camera className="w-8 h-8 text-slate-500 group-hover:text-indigo-400 mx-auto mb-3 transition-colors" />
+                <p className="text-sm text-slate-400">Click to upload or drag and drop</p>
+                <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
+              </div>
+            </div>
+
+            <button disabled={isSubmitting} type="submit" className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white font-bold text-lg shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+              {isSubmitting ? 'Submitting...' : 'Submit Report'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
