@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/Providers";
+import TopNav from '@/components/TopNav';
 
 export default function RootLayout({
   children,
@@ -20,7 +21,8 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased bg-slate-900 text-slate-50`}>
         <Providers>
-          {children}
+          <TopNav />
+          <div className="pt-24">{children}</div>
         </Providers>
       </body>
     </html>
