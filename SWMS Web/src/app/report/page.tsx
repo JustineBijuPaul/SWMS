@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Camera, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Camera, CheckCircle, X, ImageIcon } from 'lucide-react';
 
 export default function ReportIssue() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11,6 +11,23 @@ export default function ReportIssue() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [locationText, setLocationText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
   
   const getLocation = () => {
     if (navigator.geolocation) {
@@ -27,15 +44,21 @@ export default function ReportIssue() {
     setIsSubmitting(true);
     
     try {
+      // Upload image first if one was selected
+      let image_url: string | null = null;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!uploadRes.ok) throw new Error('Image upload failed');
+        const uploadData = await uploadRes.json();
+        image_url = uploadData.url;
+      }
+
       const res = await fetch('/api/complaints', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          category,
-          description,
-          locationText,
-          image_url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b' // dummy image
-        })
+        body: JSON.stringify({ category, description, locationText, image_url })
       });
       
       if (!res.ok) {
@@ -112,11 +135,25 @@ export default function ReportIssue() {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Photo Evidence</label>
-              <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:bg-white/5 transition-colors cursor-pointer group bg-slate-900/30">
-                <Camera className="w-8 h-8 text-slate-500 group-hover:text-indigo-400 mx-auto mb-3 transition-colors" />
-                <p className="text-sm text-slate-400">Click to upload or drag and drop</p>
-                <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
-              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+              {previewUrl ? (
+                <div className="relative rounded-xl overflow-hidden border border-white/10">
+                  <img src={previewUrl} alt="Preview" className="w-full h-48 object-cover" />
+                  <button type="button" onClick={removeFile} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors">
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                  <div className="absolute bottom-2 left-2 flex items-center gap-2 px-3 py-1 bg-black/60 rounded-full">
+                    <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs text-white">{selectedFile?.name}</span>
+                  </div>
+                </div>
+              ) : (
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:bg-white/5 transition-colors cursor-pointer group bg-slate-900/30">
+                  <Camera className="w-8 h-8 text-slate-500 group-hover:text-indigo-400 mx-auto mb-3 transition-colors" />
+                  <p className="text-sm text-slate-400">Click to upload or drag and drop</p>
+                  <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
+                </div>
+              )}
             </div>
 
             <button disabled={isSubmitting} type="submit" className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white font-bold text-lg shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50">

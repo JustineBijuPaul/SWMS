@@ -41,6 +41,19 @@ export default function CitizenDashboard() {
           </Link>
         </header>
 
+        {/* Quick Links */}
+        <div className="flex flex-wrap gap-3">
+          <Link href="/map" className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-sm font-medium transition-colors border border-white/5 flex items-center gap-2">
+            <MapPin className="w-4 h-4" /> View Map
+          </Link>
+          <Link href="/notifications" className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-sm font-medium transition-colors border border-white/5 flex items-center gap-2">
+            🔔 Notifications
+          </Link>
+          <Link href="/education" className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-sm font-medium transition-colors border border-white/5 flex items-center gap-2">
+            📖 Waste Guide
+          </Link>
+        </div>
+
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="glass-card p-6 rounded-2xl flex items-center gap-4 border border-white/5">

@@ -19,7 +19,8 @@ export default function Home() {
           </div>
           <nav className="hidden md:flex gap-8">
             <Link href="#features" className="text-slate-300 hover:text-white transition-colors">Features</Link>
-            <Link href="#how-it-works" className="text-slate-300 hover:text-white transition-colors">How it works</Link>
+            <Link href="/education" className="text-slate-300 hover:text-white transition-colors">Learn</Link>
+            <Link href="/map" className="text-slate-300 hover:text-white transition-colors">Map</Link>
             <Link href="/dashboard" className="text-slate-300 hover:text-white transition-colors">Dashboard</Link>
           </nav>
           <div className="flex gap-4">
