@@ -1,7 +1,31 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Home, LayoutDashboard, Map, Users, Settings, Bell, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
+  const [complaints, setComplaints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Admin dashboard fetches all complaints
+    fetch('/api/complaints')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setComplaints(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  const totalPending = complaints.filter(c => c.status === 'PENDING').length;
+  const totalInProgress = complaints.filter(c => c.status === 'IN_PROGRESS' || c.status === 'ASSIGNED').length;
+  const totalResolved = complaints.filter(c => c.status === 'RESOLVED').length;
+
   return (
     <div className="min-h-screen flex bg-slate-950 text-slate-50">
       {/* Sidebar */}
@@ -41,22 +65,22 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <MetricCard 
               title="Pending Issues" 
-              value="124" 
-              trend="+12% from yesterday"
+              value={totalPending.toString()} 
+              trend="Real-time"
               icon={<AlertTriangle className="w-6 h-6 text-amber-400" />}
               color="amber"
             />
             <MetricCard 
               title="In Progress" 
-              value="45" 
-              trend="-5% from yesterday"
+              value={totalInProgress.toString()} 
+              trend="Real-time"
               icon={<Clock className="w-6 h-6 text-blue-400" />}
               color="blue"
             />
             <MetricCard 
-              title="Resolved Today" 
-              value="89" 
-              trend="+24% from yesterday"
+              title="Resolved" 
+              value={totalResolved.toString()} 
+              trend="Real-time"
               icon={<CheckCircle className="w-6 h-6 text-emerald-400" />}
               color="emerald"
             />
@@ -80,10 +104,18 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  <TableRow id="#CMP-7829" category="Wet Waste" location="Ward 12, MG Road" status="Pending" date="2 mins ago" />
-                  <TableRow id="#CMP-7828" category="Hazardous" location="Zone B, Tech Park" status="In Progress" date="1 hour ago" />
-                  <TableRow id="#CMP-7827" category="Dry Waste" location="Ward 4, North Ave" status="Resolved" date="3 hours ago" />
-                  <TableRow id="#CMP-7826" category="Sanitary" location="Zone A, Main St" status="Pending" date="5 hours ago" />
+                  {loading ? (
+                    <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">Loading complaints...</td></tr>
+                  ) : complaints.map(cmp => (
+                    <TableRow 
+                      key={cmp.id} 
+                      id={cmp.id.substring(0,8).toUpperCase()} 
+                      category={cmp.category} 
+                      location={cmp.location?.ward || 'Unknown location'} 
+                      status={cmp.status} 
+                      date={new Date(cmp.created_at).toLocaleDateString()} 
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>

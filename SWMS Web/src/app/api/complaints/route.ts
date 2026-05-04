@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const ward = searchParams.get('ward');
 
-    // Build filter based on search params
     const filter: any = {};
     if (status) filter.status = status;
     if (ward) filter.location = { ward };
+
+    // If it's a citizen, they only see their own complaints
+    if ((session.user as any).role === 'CITIZEN') {
+      filter.user_id = (session.user as any).id;
+    }
 
     const complaints = await prisma.complaint.findMany({
       where: filter,
@@ -30,17 +41,36 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { user_id, location_id, category, description, image_url } = body;
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!user_id || !location_id || !category || !description) {
+    const body = await request.json();
+    const { category, description, locationText, image_url } = body;
+
+    if (!category || !description || !locationText) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Upsert a default location or use the text as ward for now
+    // In a real implementation we would geocode locationText -> city, ward, zone.
+    let location = await prisma.location.findFirst({ where: { ward: locationText } });
+    if (!location) {
+      location = await prisma.location.create({
+        data: {
+          state: 'State',
+          city: 'City',
+          ward: locationText,
+          pincode: '000000',
+        }
+      });
     }
 
     const newComplaint = await prisma.complaint.create({
       data: {
-        user_id,
-        location_id,
+        user_id: (session.user as any).id,
+        location_id: location.id,
         category,
         description,
         image_url,
