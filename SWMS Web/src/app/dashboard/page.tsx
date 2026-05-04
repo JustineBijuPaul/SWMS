@@ -26,6 +26,31 @@ export default function Dashboard() {
   const totalInProgress = complaints.filter(c => c.status === 'IN_PROGRESS' || c.status === 'ASSIGNED').length;
   const totalResolved = complaints.filter(c => c.status === 'RESOLVED').length;
 
+  const handleAssign = async (complaintId: string) => {
+    try {
+      // Fetch dummy worker to assign to
+      const wRes = await fetch('/api/workers');
+      const workers = await wRes.json();
+      if (!workers || workers.length === 0) return alert('No workers available to assign');
+      
+      const worker_id = workers[0].id;
+      
+      const res = await fetch('/api/complaints/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaint_id: complaintId, worker_id })
+      });
+
+      if (!res.ok) throw new Error('Failed to assign');
+      
+      // Update local state
+      setComplaints(complaints.map(c => c.id === complaintId ? { ...c, status: 'ASSIGNED' } : c));
+      alert('Task assigned to ' + workers[0].name);
+    } catch (e) {
+      alert('Error assigning task');
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-slate-950 text-slate-50">
       {/* Sidebar */}
@@ -101,19 +126,22 @@ export default function Dashboard() {
                     <th className="px-6 py-4 font-medium">Location</th>
                     <th className="px-6 py-4 font-medium">Status</th>
                     <th className="px-6 py-4 font-medium">Date</th>
+                    <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {loading ? (
-                    <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">Loading complaints...</td></tr>
+                    <tr><td colSpan={6} className="px-6 py-4 text-center text-slate-400">Loading complaints...</td></tr>
                   ) : complaints.map(cmp => (
                     <TableRow 
                       key={cmp.id} 
+                      rawId={cmp.id}
                       id={cmp.id.substring(0,8).toUpperCase()} 
                       category={cmp.category} 
                       location={cmp.location?.ward || 'Unknown location'} 
                       status={cmp.status} 
                       date={new Date(cmp.created_at).toLocaleDateString()} 
+                      onAssign={handleAssign}
                     />
                   ))}
                 </tbody>
@@ -156,12 +184,13 @@ function MetricCard({ title, value, trend, icon, color }: { title: string, value
   );
 }
 
-function TableRow({ id, category, location, status, date }: { id: string, category: string, location: string, status: string, date: string }) {
+function TableRow({ rawId, id, category, location, status, date, onAssign }: { rawId: string, id: string, category: string, location: string, status: string, date: string, onAssign: (id: string) => void }) {
   const getStatusColor = (s: string) => {
     switch (s) {
-      case 'Pending': return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
-      case 'In Progress': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'Resolved': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+      case 'PENDING': return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+      case 'IN_PROGRESS': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'ASSIGNED': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+      case 'RESOLVED': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
       default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20';
     }
   };
@@ -177,6 +206,16 @@ function TableRow({ id, category, location, status, date }: { id: string, catego
         </span>
       </td>
       <td className="px-6 py-4 text-sm text-slate-500">{date}</td>
+      <td className="px-6 py-4 text-sm text-right">
+        {status === 'PENDING' && (
+          <button 
+            onClick={() => onAssign(rawId)}
+            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium transition-colors"
+          >
+            Assign
+          </button>
+        )}
+      </td>
     </tr>
   );
 }
